@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  ============================================================================
+  FILE     : TrafficLight_Controller.L5X
+  FORMAT   : Rockwell Studio 5000 / RSLogix 5000 L5X Export (v32)
+  DESC     : Complete 4-way intersection traffic light controller
+  AUTHOR   : GitHub Copilot  (generated for daniel-SCAU/plckodetest)
+  DATE     : 2026-05-04
+  VERSION  : 1.0
+
+  HOW TO IMPORT:
+    1. Open Studio 5000 Logix Designer.
+    2. Create a new project (or open an existing one).
+    3. Right-click the Controller in the project tree and choose
+       "Import Component…" then select this .L5X file.
+    4. Map the I/O tags to your physical output/input module slots.
+    5. Download and go to RUN mode.
+  ============================================================================
+-->
+<RSLogix5000Content
+    SchemaRevision="1.0"
+    SoftwareRevision="32.00"
+    TargetName="TrafficLight_Controller"
+    TargetType="Program"
+    ContainsContext="true"
+    Owner="GitHub Copilot"
+    ExportDate="Mon May 04 08:00:00 2026"
+    ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+
+  <!-- ======================================================================
+       CONTROLLER SCOPE TAGS
+       ====================================================================== -->
+  <Controller Use="Context" Name="TrafficLight_PLC">
+
+    <Tags>
+
+      <!-- ── OUTPUTS ── -->
+      <Tag Name="NS_Red"          TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[North-South RED lamp]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="NS_Yellow"       TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[North-South YELLOW lamp]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="NS_Green"        TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[North-South GREEN lamp]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="NS_Ped_Walk"     TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[North-South pedestrian WALK lamp]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="NS_Ped_DontWalk" TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[North-South pedestrian DON'T WALK lamp (also flashes)]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+
+      <Tag Name="EW_Red"          TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[East-West RED lamp]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="EW_Yellow"       TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[East-West YELLOW lamp]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="EW_Green"        TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[East-West GREEN lamp]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="EW_Ped_Walk"     TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[East-West pedestrian WALK lamp]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="EW_Ped_DontWalk" TagType="Base" DataType="BOOL"
+           Usage="Output"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[East-West pedestrian DON'T WALK lamp (also flashes)]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+
+      <!-- ── INPUTS ── -->
+      <Tag Name="Ped_Btn_NS"          TagType="Base" DataType="BOOL"
+           Usage="Input"   Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[Pedestrian push-button — North-South crossing]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="Ped_Btn_EW"          TagType="Base" DataType="BOOL"
+           Usage="Input"   Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[Pedestrian push-button — East-West crossing]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="Emergency_Override"  TagType="Base" DataType="BOOL"
+           Usage="Input"   Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[Emergency vehicle detector / operator all-RED override]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+
+      <!-- ── INTERNAL ── -->
+      <Tag Name="State" TagType="Base" DataType="INT"
+           Usage="Local"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[State machine state: 0=NS_GREEN, 1=NS_YELLOW, 2=EW_GREEN, 3=EW_YELLOW]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+
+      <Tag Name="T_Phase" TagType="Base" DataType="TIMER"
+           Usage="Local"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[Phase timer — green (30 s) and yellow (5 s) durations]]></Description>
+        <Data Format="Decorated">
+          <Structure DataType="TIMER">
+            <DataValueMember Name="PRE"  DataType="DINT" Value="30000"/>
+            <DataValueMember Name="ACC"  DataType="DINT" Value="0"/>
+            <DataValueMember Name="EN"   DataType="BOOL" Value="0"/>
+            <DataValueMember Name="TT"   DataType="BOOL" Value="0"/>
+            <DataValueMember Name="DN"   DataType="BOOL" Value="0"/>
+          </Structure>
+        </Data>
+      </Tag>
+
+      <Tag Name="T_Ped_Flash" TagType="Base" DataType="TIMER"
+           Usage="Local"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[500 ms flash oscillator for DON'T WALK lamps]]></Description>
+        <Data Format="Decorated">
+          <Structure DataType="TIMER">
+            <DataValueMember Name="PRE"  DataType="DINT" Value="500"/>
+            <DataValueMember Name="ACC"  DataType="DINT" Value="0"/>
+            <DataValueMember Name="EN"   DataType="BOOL" Value="0"/>
+            <DataValueMember Name="TT"   DataType="BOOL" Value="0"/>
+            <DataValueMember Name="DN"   DataType="BOOL" Value="0"/>
+          </Structure>
+        </Data>
+      </Tag>
+
+      <Tag Name="T_Extend" TagType="Base" DataType="TIMER"
+           Usage="Local"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[Pedestrian green-extension timer (max 10 s)]]></Description>
+        <Data Format="Decorated">
+          <Structure DataType="TIMER">
+            <DataValueMember Name="PRE"  DataType="DINT" Value="10000"/>
+            <DataValueMember Name="ACC"  DataType="DINT" Value="0"/>
+            <DataValueMember Name="EN"   DataType="BOOL" Value="0"/>
+            <DataValueMember Name="TT"   DataType="BOOL" Value="0"/>
+            <DataValueMember Name="DN"   DataType="BOOL" Value="0"/>
+          </Structure>
+        </Data>
+      </Tag>
+
+      <Tag Name="Ped_Req_NS" TagType="Base" DataType="BOOL"
+           Usage="Local"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[Latched pedestrian request — North-South crossing]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="Ped_Req_EW" TagType="Base" DataType="BOOL"
+           Usage="Local"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[Latched pedestrian request — East-West crossing]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="Flash_Bit" TagType="Base" DataType="BOOL"
+           Usage="Local"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[500 ms toggle bit used for flashing DON'T WALK output]]></Description>
+        <Data Format="L5K"><![CDATA[0]]></Data>
+      </Tag>
+      <Tag Name="First_Scan" TagType="Base" DataType="BOOL"
+           Usage="Local"  Constant="false" ExternalAccess="Read/Write">
+        <Description><![CDATA[TRUE on first PLC scan only — triggers initialisation]]></Description>
+        <Data Format="L5K"><![CDATA[1]]></Data>
+      </Tag>
+
+    </Tags>
+
+    <!-- ====================================================================
+         PROGRAMS
+         ==================================================================== -->
+    <Programs>
+      <Program Name="MainProgram" TestEdits="false" MainRoutineName="MainRoutine"
+               Disabled="false" UseAsFolder="false">
+
+        <Tags/>
+
+        <Routines>
+
+          <!-- ============================================================
+               MAIN ROUTINE — Structured Text
+               ============================================================ -->
+          <Routine Name="MainRoutine" Type="ST">
+            <STContent>
+              <![CDATA[
+(* ---- Initialization on first scan ---------------------------------------- *)
+IF First_Scan THEN
+    State      := 0;
+    Ped_Req_NS := FALSE;
+    Ped_Req_EW := FALSE;
+    First_Scan := FALSE;
+
+    T_Phase(IN := TRUE, PT := T#30s);
+END_IF;
+
+(* ---- Latch pedestrian push-button requests -------------------------------- *)
+IF Ped_Btn_NS THEN Ped_Req_NS := TRUE; END_IF;
+IF Ped_Btn_EW THEN Ped_Req_EW := TRUE; END_IF;
+
+(* ---- Emergency override: force all RED ------------------------------------ *)
+IF Emergency_Override THEN
+    NS_Red          := TRUE;
+    NS_Yellow       := FALSE;
+    NS_Green        := FALSE;
+    NS_Ped_Walk     := FALSE;
+    NS_Ped_DontWalk := TRUE;
+
+    EW_Red          := TRUE;
+    EW_Yellow       := FALSE;
+    EW_Green        := FALSE;
+    EW_Ped_Walk     := FALSE;
+    EW_Ped_DontWalk := TRUE;
+
+    T_Phase(IN := FALSE, PT := T#30s);
+    RETURN;
+END_IF;
+
+(* ---- 0.5-second flash oscillator for DON'T WALK lamps -------------------- *)
+T_Ped_Flash(IN := NOT T_Ped_Flash.DN, PT := T#500ms);
+IF T_Ped_Flash.DN THEN
+    Flash_Bit := NOT Flash_Bit;
+    T_Ped_Flash(IN := FALSE, PT := T#500ms);
+    T_Ped_Flash(IN := TRUE,  PT := T#500ms);
+END_IF;
+
+(* ---- State machine -------------------------------------------------------- *)
+CASE State OF
+
+    (* STATE 0: North-South GREEN  /  East-West RED *)
+    0:
+        NS_Red          := FALSE;
+        NS_Yellow       := FALSE;
+        NS_Green        := TRUE;
+        EW_Red          := TRUE;
+        EW_Yellow       := FALSE;
+        EW_Green        := FALSE;
+
+        NS_Ped_Walk     := TRUE;
+        EW_Ped_Walk     := FALSE;
+
+        IF Ped_Req_NS AND NOT T_Extend.DN THEN
+            T_Extend(IN := TRUE, PT := T#10s);
+        END_IF;
+
+        T_Phase(IN := TRUE, PT := T#30s);
+
+        IF (T#30s - T_Phase.ACC) <= T#7s THEN
+            NS_Ped_Walk     := FALSE;
+            NS_Ped_DontWalk := Flash_Bit;
+            EW_Ped_DontWalk := TRUE;
+        ELSE
+            NS_Ped_DontWalk := FALSE;
+            EW_Ped_DontWalk := TRUE;
+        END_IF;
+
+        IF T_Phase.DN THEN
+            IF Ped_Req_NS AND NOT T_Extend.DN THEN
+                T_Phase(IN := FALSE, PT := T#30s);
+                T_Phase(IN := TRUE,  PT := T#30s);
+            ELSE
+                State := 1;
+                T_Phase(IN := FALSE, PT := T#30s);
+                T_Phase(IN := TRUE,  PT := T#5s);
+                T_Extend(IN := FALSE, PT := T#10s);
+                Ped_Req_NS := FALSE;
+            END_IF;
+        END_IF;
+
+    (* STATE 1: North-South YELLOW  /  East-West RED *)
+    1:
+        NS_Red          := FALSE;
+        NS_Yellow       := TRUE;
+        NS_Green        := FALSE;
+        EW_Red          := TRUE;
+        EW_Yellow       := FALSE;
+        EW_Green        := FALSE;
+
+        NS_Ped_Walk     := FALSE;
+        NS_Ped_DontWalk := TRUE;
+        EW_Ped_Walk     := FALSE;
+        EW_Ped_DontWalk := TRUE;
+
+        T_Phase(IN := TRUE, PT := T#5s);
+
+        IF T_Phase.DN THEN
+            State := 2;
+            T_Phase(IN := FALSE, PT := T#5s);
+            T_Phase(IN := TRUE,  PT := T#30s);
+        END_IF;
+
+    (* STATE 2: North-South RED  /  East-West GREEN *)
+    2:
+        NS_Red          := TRUE;
+        NS_Yellow       := FALSE;
+        NS_Green        := FALSE;
+        EW_Red          := FALSE;
+        EW_Yellow       := FALSE;
+        EW_Green        := TRUE;
+
+        NS_Ped_Walk     := FALSE;
+        EW_Ped_Walk     := TRUE;
+
+        IF Ped_Req_EW AND NOT T_Extend.DN THEN
+            T_Extend(IN := TRUE, PT := T#10s);
+        END_IF;
+
+        T_Phase(IN := TRUE, PT := T#30s);
+
+        IF (T#30s - T_Phase.ACC) <= T#7s THEN
+            EW_Ped_Walk     := FALSE;
+            EW_Ped_DontWalk := Flash_Bit;
+            NS_Ped_DontWalk := TRUE;
+        ELSE
+            EW_Ped_DontWalk := FALSE;
+            NS_Ped_DontWalk := TRUE;
+        END_IF;
+
+        IF T_Phase.DN THEN
+            IF Ped_Req_EW AND NOT T_Extend.DN THEN
+                T_Phase(IN := FALSE, PT := T#30s);
+                T_Phase(IN := TRUE,  PT := T#30s);
+            ELSE
+                State := 3;
+                T_Phase(IN := FALSE, PT := T#30s);
+                T_Phase(IN := TRUE,  PT := T#5s);
+                T_Extend(IN := FALSE, PT := T#10s);
+                Ped_Req_EW := FALSE;
+            END_IF;
+        END_IF;
+
+    (* STATE 3: North-South RED  /  East-West YELLOW *)
+    3:
+        NS_Red          := TRUE;
+        NS_Yellow       := FALSE;
+        NS_Green        := FALSE;
+        EW_Red          := FALSE;
+        EW_Yellow       := TRUE;
+        EW_Green        := FALSE;
+
+        NS_Ped_Walk     := FALSE;
+        NS_Ped_DontWalk := TRUE;
+        EW_Ped_Walk     := FALSE;
+        EW_Ped_DontWalk := TRUE;
+
+        T_Phase(IN := TRUE, PT := T#5s);
+
+        IF T_Phase.DN THEN
+            State := 0;
+            T_Phase(IN := FALSE, PT := T#5s);
+            T_Phase(IN := TRUE,  PT := T#30s);
+        END_IF;
+
+    (* Default: safe fallback — all RED *)
+    ELSE
+        NS_Red          := TRUE;
+        NS_Yellow       := FALSE;
+        NS_Green        := FALSE;
+        EW_Red          := TRUE;
+        EW_Yellow       := FALSE;
+        EW_Green        := FALSE;
+        NS_Ped_Walk     := FALSE;
+        NS_Ped_DontWalk := TRUE;
+        EW_Ped_Walk     := FALSE;
+        EW_Ped_DontWalk := TRUE;
+        State           := 0;
+        T_Phase(IN := FALSE, PT := T#30s);
+        T_Phase(IN := TRUE,  PT := T#30s);
+
+END_CASE;
+              ]]>
+            </STContent>
+          </Routine>
+
+        </Routines>
+      </Program>
+    </Programs>
+
+  </Controller>
+</RSLogix5000Content>
